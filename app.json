@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Erickify",
+    "slug": "erickify",
+    "version": "1.0.0",
+    "sdkVersion": "48.0.0",
+    "platforms": ["ios", "android", "web"],
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0a0a0a"
+    },
+    "assetBundlePatterns": ["**/*"]
+  }
+}
