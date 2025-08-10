@@ -13,16 +13,6 @@ import { Audio } from 'expo-av';
 
 const MARBLE_BG = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80'; // Mármol negro demo
 
-const LOGO_SVG = (
-  <View style={styles.logoContainer}>
-    {/* Boca minimalista sacando lengua negra */}
-    <View style={styles.mouth}>
-      <View style={styles.tongue} />
-    </View>
-  </View>
-);
-
-// Datos simulados para canciones
 const songs = [
   {
     id: '1',
@@ -124,6 +114,15 @@ export default function App() {
     extrapolate: 'clamp',
   });
 
+  // Muevo el logo aquí, dentro del componente para poder usar styles sin error
+  const Logo = () => (
+    <View style={styles.logoContainer}>
+      <View style={styles.mouth}>
+        <View style={styles.tongue} />
+      </View>
+    </View>
+  );
+
   return (
     <ImageBackground
       source={{ uri: MARBLE_BG }}
@@ -132,7 +131,7 @@ export default function App() {
       resizeMode="cover"
     >
       <View style={styles.header}>
-        {LOGO_SVG}
+        <Logo />
         <Text style={styles.title}>Erickify</Text>
         <Text style={styles.subtitle}>Axel se la come</Text>
       </View>
