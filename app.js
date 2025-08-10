@@ -1,273 +1,214 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
-  ImageBackground,
   Animated,
   Dimensions,
+  Easing,
+  ImageBackground,
 } from 'react-native';
-import { Audio } from 'expo-av';
-
-const MARBLE_BG = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80'; // Mármol negro demo
-
-const songs = [
-  {
-    id: '1',
-    title: 'Eclipse Solar',
-    artist: 'Erick Beats',
-    duration: '3:45',
-    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-  },
-  {
-    id: '2',
-    title: 'Noches Oscuras',
-    artist: 'Mármol Waves',
-    duration: '4:12',
-    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-  },
-  {
-    id: '3',
-    title: 'Luz Neón',
-    artist: 'Brillo Noir',
-    duration: '2:58',
-    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-  },
-];
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-export default function App() {
-  const [currentScreen, setCurrentScreen] = useState('Home');
-  const [soundObj, setSoundObj] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentSong, setCurrentSong] = useState(null);
-  const [positionMillis, setPositionMillis] = useState(0);
-  const [durationMillis, setDurationMillis] = useState(1);
-  const progressAnim = useRef(new Animated.Value(0)).current;
+// URL de textura mármol negro con algo de ruido para animar
+const MARBLE_BG = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80';
 
+export default function Erickify() {
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const moveAnim = useRef(new Animated.Value(0)).current;
+
+  // Animación infinita de brillo
   useEffect(() => {
-    return () => {
-      if (soundObj) {
-        soundObj.unloadAsync();
-      }
-    };
-  }, [soundObj]);
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: false,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0,
+          duration: 3000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: false,
+        }),
+      ])
+    ).start();
 
-  useEffect(() => {
-    Animated.timing(progressAnim, {
-      toValue: positionMillis / durationMillis,
-      duration: 250,
-      useNativeDriver: false,
-    }).start();
-  }, [positionMillis]);
+    // Pulso suave y eterno
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.08,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
 
-  const playSong = async (song) => {
-    if (soundObj) {
-      await soundObj.unloadAsync();
-      setIsPlaying(false);
-    }
-    const { sound } = await Audio.Sound.createAsync({ uri: song.uri });
-    setSoundObj(sound);
-    setCurrentSong(song);
-    setIsPlaying(true);
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.isLoaded) {
-        setPositionMillis(status.positionMillis);
-        setDurationMillis(status.durationMillis || 1);
-        setIsPlaying(status.isPlaying);
-        if (status.didJustFinish) {
-          setIsPlaying(false);
-        }
-      }
-    });
-    await sound.playAsync();
-  };
+    // Movimiento horizontal lento para fondo mármol
+    Animated.loop(
+      Animated.timing(moveAnim, {
+        toValue: 1,
+        duration: 40000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
 
-  const togglePlayPause = async () => {
-    if (!soundObj) return;
-    if (isPlaying) {
-      await soundObj.pauseAsync();
-      setIsPlaying(false);
-    } else {
-      await soundObj.playAsync();
-      setIsPlaying(true);
-    }
-  };
-
-  const renderSong = ({ item }) => (
-    <TouchableOpacity
-      style={styles.songItem}
-      onPress={() => playSong(item)}
-    >
-      <Text style={styles.songTitle}>{item.title}</Text>
-      <Text style={styles.songArtist}>{item.artist}</Text>
-      <Text style={styles.songDuration}>{item.duration}</Text>
-    </TouchableOpacity>
-  );
-
-  const progressWidth = progressAnim.interpolate({
+  // Interpolación para brillo negro en botones
+  const glowInterpolation = glowAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, SCREEN_WIDTH - 40],
-    extrapolate: 'clamp',
+    outputRange: ['rgba(0,0,0,0.6)', 'rgba(50,50,50,0.9)'],
   });
 
-  // Muevo el logo aquí, dentro del componente para poder usar styles sin error
-  const Logo = () => (
-    <View style={styles.logoContainer}>
-      <View style={styles.mouth}>
-        <View style={styles.tongue} />
-      </View>
-    </View>
-  );
+  // Movimiento del fondo (desplazamiento horizontal lento)
+  const translateX = moveAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -150],
+  });
 
   return (
     <ImageBackground
       source={{ uri: MARBLE_BG }}
       style={styles.container}
-      imageStyle={{ opacity: 0.3 }}
-      resizeMode="cover"
+      imageStyle={{ opacity: 0.6 }}
+      resizeMode="repeat"
     >
-      <View style={styles.header}>
-        <Logo />
+      <Animated.View style={[styles.header, { transform: [{ scale: pulseAnim }] }]}>
+        {/* Logo animado (boca sacando lengua) */}
+        <Animated.View style={[styles.logoMouth, { shadowColor: glowInterpolation, shadowRadius: glowAnim.interpolate({ inputRange: [0,1], outputRange: [2, 8] }) }]}>
+          <View style={styles.tongue} />
+        </Animated.View>
+
         <Text style={styles.title}>Erickify</Text>
         <Text style={styles.subtitle}>Axel se la come</Text>
-      </View>
+      </Animated.View>
 
-      <View style={styles.content}>
-        {currentScreen === 'Home' && (
-          <FlatList
-            data={songs}
-            keyExtractor={(item) => item.id}
-            renderItem={renderSong}
-            style={{ flex: 1 }}
-          />
-        )}
-        {currentScreen === 'Search' && (
-          <View style={styles.centered}>
-            <Text style={styles.placeholderText}>Buscar canciones...</Text>
-          </View>
-        )}
-        {currentScreen === 'Library' && (
-          <View style={styles.centered}>
-            <Text style={styles.placeholderText}>Tu biblioteca</Text>
-          </View>
-        )}
-      </View>
+      <Animated.View style={[styles.buttonsContainer, { backgroundColor: glowInterpolation, transform: [{ translateX }] }]}>
+        {['Inicio', 'Buscar', 'Biblioteca'].map((btn) => (
+          <TouchableOpacity key={btn} style={[styles.button, { shadowColor: glowInterpolation, shadowRadius: glowAnim.interpolate({ inputRange: [0,1], outputRange: [4, 14] }) }]}>
+            <Text style={styles.buttonText}>{btn}</Text>
+          </TouchableOpacity>
+        ))}
+      </Animated.View>
 
       <View style={styles.player}>
-        <TouchableOpacity onPress={togglePlayPause} style={styles.playButton}>
-          <Text style={styles.playButtonText}>
-            {isPlaying ? '⏸' : '▶'}
-          </Text>
+        <TouchableOpacity style={[styles.playButton, { shadowColor: glowInterpolation, shadowRadius: glowAnim.interpolate({ inputRange: [0,1], outputRange: [2, 10] }) }]}>
+          <Text style={styles.playButtonText}>▶</Text>
         </TouchableOpacity>
         <View style={styles.progressBarBackground}>
-          <Animated.View style={[styles.progressBar, { width: progressWidth }]} />
+          <Animated.View style={[styles.progressBar, { width: SCREEN_WIDTH * 0.6, backgroundColor: glowInterpolation }]} />
         </View>
-        <Text style={styles.currentSongText}>
-          {currentSong ? currentSong.title : 'Nada reproduciéndose'}
-        </Text>
-      </View>
-
-      <View style={styles.navbar}>
-        <TouchableOpacity onPress={() => setCurrentScreen('Home')} style={styles.navButton}>
-          <Text style={[styles.navText, currentScreen === 'Home' && styles.navActive]}>Inicio</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setCurrentScreen('Search')} style={styles.navButton}>
-          <Text style={[styles.navText, currentScreen === 'Search' && styles.navActive]}>Buscar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setCurrentScreen('Library')} style={styles.navButton}>
-          <Text style={[styles.navText, currentScreen === 'Library' && styles.navActive]}>Biblioteca</Text>
-        </TouchableOpacity>
       </View>
     </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  header: {
+  container: {
+    flex: 1,
+    backgroundColor: '#000',
     paddingTop: 60,
-    paddingBottom: 20,
     alignItems: 'center',
   },
-  logoContainer: {
-    width: 80,
-    height: 60,
-    marginBottom: 10,
+  header: {
+    alignItems: 'center',
+    marginBottom: 50,
   },
-  mouth: {
-    position: 'relative',
+  logoMouth: {
     width: 80,
     height: 40,
     backgroundColor: '#111',
     borderRadius: 40,
-    borderColor: '#222',
     borderWidth: 2,
+    borderColor: '#222',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 15,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
   },
   tongue: {
     position: 'absolute',
-    bottom: 2,
+    bottom: 6,
     width: 24,
     height: 12,
     backgroundColor: '#000',
     borderRadius: 12,
   },
   title: {
-    fontSize: 36,
+    fontSize: 42,
     fontWeight: '900',
     color: '#1affd5',
+    textShadowColor: '#000a',
+    textShadowRadius: 10,
   },
   subtitle: {
-    color: '#666',
     fontSize: 14,
-    marginTop: 4,
     fontStyle: 'italic',
+    color: '#666',
   },
-  content: {
-    flex: 1,
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: SCREEN_WIDTH,
     paddingHorizontal: 20,
+    marginBottom: 50,
+    paddingVertical: 20,
+    borderRadius: 20,
   },
-  songItem: {
+  button: {
     backgroundColor: '#111',
-    marginVertical: 8,
-    padding: 15,
-    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 22,
+    borderRadius: 50,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
   },
-  songTitle: {
-    fontSize: 18,
+  buttonText: {
     color: '#1affd5',
     fontWeight: 'bold',
-  },
-  songArtist: {
-    color: '#888',
-    marginTop: 4,
-  },
-  songDuration: {
-    position: 'absolute',
-    right: 15,
-    top: 20,
-    color: '#666',
+    fontSize: 18,
   },
   player: {
-    height: 70,
-    borderTopColor: '#222',
-    borderTopWidth: 1,
-    backgroundColor: '#111',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    backgroundColor: '#111',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 40,
+    shadowColor: '#1affd5',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 12,
+    width: SCREEN_WIDTH * 0.9,
   },
   playButton: {
-    marginRight: 15,
+    backgroundColor: '#000',
+    borderRadius: 50,
+    padding: 18,
+    marginRight: 30,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
   },
   playButtonText: {
     fontSize: 28,
     color: '#1affd5',
+    fontWeight: '900',
   },
   progressBarBackground: {
     flex: 1,
@@ -275,45 +216,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#222',
     borderRadius: 3,
     overflow: 'hidden',
-    marginRight: 15,
   },
   progressBar: {
     height: 6,
     backgroundColor: '#1affd5',
-  },
-  currentSongText: {
-    color: '#666',
-    fontSize: 12,
-    maxWidth: 120,
-  },
-  navbar: {
-    height: 60,
-    borderTopColor: '#222',
-    borderTopWidth: 1,
-    backgroundColor: '#111',
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-  },
-  navButton: {
-    padding: 10,
-  },
-  navText: {
-    color: '#888',
-    fontWeight: 'bold',
-  },
-  navActive: {
-    color: '#1affd5',
-    textDecorationLine: 'underline',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  placeholderText: {
-    color: '#666',
-    fontSize: 18,
-    fontStyle: 'italic',
   },
 });
